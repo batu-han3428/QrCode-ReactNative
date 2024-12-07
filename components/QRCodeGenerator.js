@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { View, TextInput, Button, Alert, StyleSheet, Platform, PermissionsAndroid } from 'react-native';
+import { View, StyleSheet, Platform, PermissionsAndroid } from 'react-native';
+import { TextInput, Button, Card, Paragraph, Snackbar } from 'react-native-paper';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
 import RNFS from 'react-native-fs';
@@ -7,6 +8,8 @@ import RNFS from 'react-native-fs';
 const QRCodeGenerator = () => {
   const [link, setLink] = useState('');
   const [generatedQR, setGeneratedQR] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const viewShotRef = useRef(null);
 
   const requestStoragePermission = async () => {
@@ -34,7 +37,8 @@ const QRCodeGenerator = () => {
   const saveQRCode = async () => {
     const hasPermission = await requestStoragePermission();
     if (!hasPermission) {
-      Alert.alert('İzin Gerekli', 'QR kodunu kaydetmek için izin vermelisiniz.');
+      setSnackbarMessage('QR kodunu kaydetmek için izin vermelisiniz.');
+      setSnackbarVisible(true);
       return;
     }
 
@@ -49,12 +53,11 @@ const QRCodeGenerator = () => {
         await RNFS.scanFile(filePath);
       }
 
-      Alert.alert(
-        'Başarılı!',
-        `QR kodu başarıyla kaydedildi: ${filePath}`
-      );
+      setSnackbarMessage(`QR kodu başarıyla kaydedildi: ${filePath}`);
+      setSnackbarVisible(true);
     } catch (error) {
-      Alert.alert('Hata', 'QR kodu kaydedilemedi.');
+      setSnackbarMessage('QR kodu kaydedilemedi.');
+      setSnackbarVisible(true);
       console.error(error);
     }
   };
@@ -66,31 +69,57 @@ const QRCodeGenerator = () => {
 
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Bağlantıyı buraya girin"
-        value={link}
-        onChangeText={handleInputChange}
-      />
-      <Button
-        title="QR Kodu Oluştur"
-        onPress={() => {
-          if (link.trim() === '') {
-            Alert.alert('Hata', 'Lütfen geçerli bir bağlantı girin.');
-          } else {
-            setGeneratedQR(true);
-          }
-        }}
-      />
+      <Card style={styles.card}>
+        <Card.Content>
+          <Paragraph style={styles.paragraph}>
+            Aşağıya bağlantınızı girin ve QR kodunu oluşturun!
+          </Paragraph>
+          <TextInput
+            mode="outlined"
+            label="Bağlantı"
+            placeholder="https://örnek.com"
+            value={link}
+            onChangeText={handleInputChange}
+            style={styles.input}
+          />
+          <Button
+            mode="contained"
+            onPress={() => {
+              if (link.trim() === '') {
+                setSnackbarMessage('Lütfen geçerli bir bağlantı girin.');
+                setSnackbarVisible(true);
+              } else {
+                setGeneratedQR(true);
+              }
+            }}
+            style={styles.button}
+          >
+            QR Kodu Oluştur
+          </Button>
+          {generatedQR && (
+            <View style={styles.qrContainer}>
+              <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
+                <QRCode value={link} size={200} />
+              </ViewShot>
+              <Button
+                mode="outlined"
+                onPress={saveQRCode}
+                style={styles.saveButton}
+              >
+                QR Kodunu Kaydet
+              </Button>
+            </View>
+            )}
+        </Card.Content>
+      </Card>
 
-      {generatedQR && (
-        <View style={styles.qrContainer}>
-          <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
-            <QRCode value={link} size={200} />
-          </ViewShot>
-          <Button title="QR Kodunu Kaydet" onPress={saveQRCode} />
-        </View>
-      )}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };
@@ -98,21 +127,43 @@ const QRCodeGenerator = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+  },
+  card: {
+    marginBottom: 20,
+    borderRadius: 10,
+    elevation: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 20,
+  },
+  paragraph: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    width: '100%',
-    padding: 10,
     marginBottom: 20,
+  },
+  button: {
+    marginTop: 10,
+  },
+  qrCard: {
+    marginTop: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+    elevation: 4,
+  },
+  saveButton: {
+    marginTop: 20,
   },
   qrContainer: {
     marginTop: 20,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

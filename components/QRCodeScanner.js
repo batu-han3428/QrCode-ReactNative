@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, Platform, PermissionsAndroid, Linking, Text, Button } from 'react-native';
+import { View, Platform, PermissionsAndroid, Linking, StyleSheet } from 'react-native';
 import { Camera, CameraType } from 'react-native-camera-kit';
+import { Snackbar, Text, Button, Dialog, Portal, Card } from 'react-native-paper';
 
 const QRScanner = () => {
   const [scanned, setScanned] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState('');
 
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -38,43 +42,108 @@ const QRScanner = () => {
           if (scannedData.toLowerCase().startsWith('www.')) {
             scannedData = `http://${scannedData}`;
           } else {
-            Alert.alert('Geçersiz URL', 'Lütfen geçerli bir bağlantı girin.');
+            setDialogMessage('Geçersiz URL: Lütfen geçerli bir bağlantı girin.');
+            setDialogVisible(true);
+            setScanned(false);
             return;
           }
         }
-        Linking.openURL(scannedData).catch((err) =>
-          Alert.alert('Bağlantı açılamadı', err.message)
-        );
+        Linking.openURL(scannedData).catch(() => {
+          setDialogMessage('Bağlantı açılamadı: Geçerli bir URL sağladığınızdan emin olun.');
+          setDialogVisible(true);
+        });
         setScanned(false);
       }
     } catch (error) {
-      console.log(error)
+      setErrorVisible(true);
     }
-  
   };
 
   if (!hasPermission) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Kamera izni gerekiyor</Text>
-        <Button title="İzin Ver" onPress={requestCameraPermission} />
+      <View style={styles.permissionContainer}>
+        <Card style={styles.card}>
+          <Card.Title title="Qr Tarayıcı" subtitle="Kamera izni gerekiyor" />
+          <Card.Content>
+            <Button
+              mode="contained"
+              onPress={requestCameraPermission}
+              icon="camera"
+              style={styles.button}
+            >
+              İzin Ver
+            </Button>
+          </Card.Content>
+        </Card>
       </View>
     );
   }
 
   return (
-    <Camera
-      style={{ width: '100%', height: '100%' }}
-      cameraType={CameraType.Back}
-      flashMode="auto"
-      scanBarcode={!scanned}
-      onReadCode={onBarcodeScan}
-      showFrame={true}
-      frameColor="green"
-      laserColor="blue"
-      focusMode="on"
-    />
+    <View style={{width: '100%', height: '100%'}}>
+      <Camera
+        style={{ width: '100%', height: '100%' }}
+        cameraType={CameraType.Back}
+        flashMode="auto"
+        scanBarcode={!scanned}
+        onReadCode={onBarcodeScan}
+        showFrame={true}
+        frameColor="green"
+        laserColor="blue"
+        focusMode="on"
+      />
+      <Snackbar
+        visible={errorVisible}
+        onDismiss={() => setErrorVisible(false)}
+        duration={3000}
+        style={styles.snackbar}
+      >
+        Beklenmeyen bir hata oluştu!
+      </Snackbar>
+      <Portal>
+        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+          <Dialog.Title>Uyarı</Dialog.Title>
+          <Dialog.Content>
+            <Text>{dialogMessage}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>Tamam</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    width: '100%',
+    padding: 16,
+  },
+  permissionText: {
+    fontSize: 18,
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  permissionButton: {
+    width: '60%',
+  },
+  snackbar: {
+    backgroundColor: '#f44336',
+  },
+  card: {
+    elevation: 4,
+    borderRadius: 12,
+    width:'100%'
+  },
+  button: {
+    marginVertical: 16,
+  },
+});
 
 export default QRScanner;
