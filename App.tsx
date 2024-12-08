@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { IconButton, Appbar, Provider as PaperProvider, DefaultTheme, MD3Theme } from 'react-native-paper';
+import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { IconButton, Appbar, Provider as PaperProvider, DefaultTheme, MD3Theme, Menu } from 'react-native-paper';
 import QRScanner from './components/QRCodeScanner';
 import QRCodeGenerator from './components/QRCodeGenerator';
 import QRPhotoReader from './components/QRPhotoReader';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import './i18n';
 
 type ActiveMode = 'scanner' | 'generator' | 'photo' | '';
+type Language = 'en' | 'tr';
 
 const theme: MD3Theme = {
   ...DefaultTheme,
@@ -18,14 +21,45 @@ const theme: MD3Theme = {
 };
 
 const App: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [activeMode, setActiveMode] = useState<ActiveMode>('');
+  const [visible, setVisible] = useState<boolean>(false);
+  const currentLanguage: Language = i18n.language as Language;
+
+  const ukFlag = require('./images/uk.png');
+  const trFlag = require('./images/tr.png');
+
+  const openMenu = () => setVisible(true);
+  const closeMenu = () => setVisible(false);
+
+  const changeLanguage = (language: string) => {
+    i18n.changeLanguage(language);
+    closeMenu();
+  };
 
   return (
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
         <View style={styles.container}>
           <Appbar.Header>
-            <Appbar.Content title="Seçim yapın" />
+            <Appbar.Content title={t('select')} />
+            <Menu
+              visible={visible}
+              onDismiss={closeMenu}
+              anchor={
+                <TouchableOpacity 
+                  onPress={openMenu}
+                >
+                  <Image
+                    source={currentLanguage === 'en' ? ukFlag : trFlag}
+                    style={styles.flag}
+                  />
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item onPress={() => changeLanguage('en')} title="English" />
+              <Menu.Item onPress={() => changeLanguage('tr')} title="Türkçe" />
+            </Menu>
           </Appbar.Header>
 
           <View style={styles.iconButtonContainer}>
@@ -75,6 +109,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  flag: {
+    width: 30,
+    height: 30,
+  }
 });
 
 export default App;

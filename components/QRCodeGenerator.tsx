@@ -4,8 +4,10 @@ import { TextInput, Button, Card, Paragraph, Snackbar } from 'react-native-paper
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot, { CaptureOptions } from 'react-native-view-shot';
 import RNFS from 'react-native-fs';
+import { useTranslation } from 'react-i18next';
 
 const QRCodeGenerator: React.FC = () => {
+  const { t } = useTranslation();
   const [link, setLink] = useState<string>('');
   const [generatedQR, setGeneratedQR] = useState<boolean>(false);
   const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
@@ -18,17 +20,17 @@ const QRCodeGenerator: React.FC = () => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
           {
-            title: 'Depolama İzni Gerekli',
-            message:
-              'QR kodunu cihazınıza kaydedebilmek için depolama iznine ihtiyacımız var.',
-            buttonNeutral: 'Sonra Sor',
-            buttonNegative: 'Hayır',
-            buttonPositive: 'Evet',
+            title: t('storagePermissionRequired'),
+            message: t('weNeedStoragePermissionToSaveTheQRCodeOnYourDevice'),
+            buttonNeutral: t('later'),
+            buttonNegative: t('cancel'),
+            buttonPositive: t('ok'),
           }
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
+        setSnackbarMessage(t('anUnexpectedErrorOccurred'));
+        setSnackbarVisible(true);
         return false;
       }
     }
@@ -38,7 +40,7 @@ const QRCodeGenerator: React.FC = () => {
   const saveQRCode = async (): Promise<void> => {
     const hasPermission = await requestStoragePermission();
     if (!hasPermission) {
-      setSnackbarMessage('QR kodunu kaydetmek için izin vermelisiniz.');
+      setSnackbarMessage(t('youMustGrantPermissionToSaveTheQRCode'));
       setSnackbarVisible(true);
       return;
     }
@@ -58,12 +60,11 @@ const QRCodeGenerator: React.FC = () => {
         await RNFS.scanFile(filePath);
       }
 
-      setSnackbarMessage(`QR kodu başarıyla kaydedildi: ${filePath}`);
+      setSnackbarMessage(`${t('qRCodeSavedSuccessfully')}: ${filePath}`);
       setSnackbarVisible(true);
     } catch (error) {
-      setSnackbarMessage('QR kodu kaydedilemedi.');
+      setSnackbarMessage(t('qRCodeCouldNotBeSaved'));
       setSnackbarVisible(true);
-      console.error(error);
     }
   };
 
@@ -77,12 +78,12 @@ const QRCodeGenerator: React.FC = () => {
       <Card style={styles.card}>
         <Card.Content>
           <Paragraph style={styles.paragraph}>
-            Aşağıya bağlantınızı girin ve QR kodunu oluşturun!
+            {t('enterYourLinkBelowAndGenerateQRCode')}
           </Paragraph>
           <TextInput
             mode="outlined"
-            label="Bağlantı"
-            placeholder="https://örnek.com"
+            label={t("connection")}
+            placeholder="https://.....com"
             value={link}
             onChangeText={handleInputChange}
             style={styles.input}
@@ -91,7 +92,7 @@ const QRCodeGenerator: React.FC = () => {
             mode="contained"
             onPress={() => {
               if (link.trim() === '') {
-                setSnackbarMessage('Lütfen geçerli bir bağlantı girin.');
+                setSnackbarMessage(t('pleaseEnterAValidLink'));
                 setSnackbarVisible(true);
               } else {
                 setGeneratedQR(true);
@@ -99,7 +100,7 @@ const QRCodeGenerator: React.FC = () => {
             }}
             style={styles.button}
           >
-            QR Kodu Oluştur
+            {t('createQRCode')}
           </Button>
           {generatedQR && (
             <View style={styles.qrContainer}>
@@ -114,7 +115,7 @@ const QRCodeGenerator: React.FC = () => {
                 onPress={saveQRCode}
                 style={styles.saveButton}
               >
-                QR Kodunu Kaydet
+                {t('saveQRCode')}
               </Button>
             </View>
           )}

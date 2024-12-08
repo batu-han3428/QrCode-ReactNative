@@ -3,8 +3,10 @@ import { View, Image, StyleSheet, Linking } from 'react-native';
 import { Button, Card, Text, Snackbar, ActivityIndicator } from 'react-native-paper';
 import { launchImageLibrary } from 'react-native-image-picker';
 import RNQRGenerator from 'rn-qr-generator';
+import { useTranslation } from 'react-i18next';
 
 const QRPhotoReader: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [qrCodeValue, setQRCodeValue] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -13,9 +15,11 @@ const QRPhotoReader: React.FC = () => {
   const selectImage = (): void => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
       if (response.didCancel) {
-        console.log('Kullanıcı seçim yapmadı.');
+        setQRCodeValue(t('theUserDidNotMakeASelection'));
+        setSnackbarVisible(true);
       } else if (response.errorCode) {
-        console.error('Görsel seçme hatası:', response.errorMessage);
+        setQRCodeValue(t('imageSelectionError'));
+        setSnackbarVisible(true);
       } else if (response.assets && response.assets.length > 0) {
         const imageUri = response.assets[0].uri;
         if (imageUri) {
@@ -41,7 +45,7 @@ const QRPhotoReader: React.FC = () => {
             if (detectedValue.toLowerCase().startsWith('www.')) {
               detectedValue = `http://${detectedValue}`;
             } else {
-              setQRCodeValue(`Geçersiz URL: ${detectedValue}`);
+              setQRCodeValue(`${'invalidURL'}: ${detectedValue}`);
               setSnackbarVisible(true);
               return;
             }
@@ -49,18 +53,17 @@ const QRPhotoReader: React.FC = () => {
 
           setQRCodeValue(detectedValue);
 
-          Linking.openURL(detectedValue).catch((err) => {
-            setQRCodeValue(`Bağlantı açılamadı: ${err.message}`);
+          Linking.openURL(detectedValue).catch(() => {
+            setQRCodeValue(t('couldNotOpenLinkMakeSureYouProvidedAValidURL'));
             setSnackbarVisible(true);
           });
         } else {
-          setQRCodeValue('Resimde QR kod bulunamadı.');
+          setQRCodeValue(t('qRCodeNotFoundInTheImage'));
           setSnackbarVisible(true);
         }
       })
-      .catch((error: Error) => {
-        console.error('QR kod algılama hatası:', error);
-        setQRCodeValue('QR kod algılama sırasında bir hata oluştu.');
+      .catch(() => {
+        setQRCodeValue(t('anErrorOccurredDuringQRCodeDetection'));
         setSnackbarVisible(true);
       })
       .finally(() => {
@@ -71,7 +74,7 @@ const QRPhotoReader: React.FC = () => {
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        <Card.Title title="QR Kod Okuyucu" subtitle="Resimlerden QR kod tarayın" />
+        <Card.Title title={t("qRCodeReader")} subtitle={t("scanQRCodeFromImages")} />
         <Card.Content>
           <Button
             mode="contained"
@@ -80,7 +83,7 @@ const QRPhotoReader: React.FC = () => {
             style={styles.button}
             disabled={loading}
           >
-            Fotoğraf Seç
+            {t('selectPhoto')}
           </Button>
           {loading && <ActivityIndicator animating size="large" style={styles.loader} />}
           {selectedImage && (
