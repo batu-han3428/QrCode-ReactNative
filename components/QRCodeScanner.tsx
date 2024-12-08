@@ -3,14 +3,14 @@ import { View, Platform, PermissionsAndroid, Linking, StyleSheet } from 'react-n
 import { Camera, CameraType } from 'react-native-camera-kit';
 import { Snackbar, Text, Button, Dialog, Portal, Card } from 'react-native-paper';
 
-const QRScanner = () => {
-  const [scanned, setScanned] = useState(false);
-  const [hasPermission, setHasPermission] = useState(false);
-  const [errorVisible, setErrorVisible] = useState(false);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [dialogMessage, setDialogMessage] = useState('');
+const QRScanner: React.FC = () => {
+  const [scanned, setScanned] = useState<boolean>(false);
+  const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [errorVisible, setErrorVisible] = useState<boolean>(false);
+  const [dialogVisible, setDialogVisible] = useState<boolean>(false);
+  const [dialogMessage, setDialogMessage] = useState<string>('');
 
-  const requestCameraPermission = async () => {
+  const requestCameraPermission = async (): Promise<void> => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
@@ -28,11 +28,7 @@ const QRScanner = () => {
     }
   };
 
-  useEffect(() => {
-    requestCameraPermission();
-  }, []);
-
-  const onBarcodeScan = (event) => {
+  const onBarcodeScan = (event: { nativeEvent: { codeStringValue: string } }): void => {
     try {
       if (!scanned) {
         setScanned(true);
@@ -42,12 +38,13 @@ const QRScanner = () => {
           if (scannedData.toLowerCase().startsWith('www.')) {
             scannedData = `http://${scannedData}`;
           } else {
-            setDialogMessage('Geçersiz URL: Lütfen geçerli bir bağlantı girin.');
+            setDialogMessage(`Geçersiz URL: ${scannedData}`);
             setDialogVisible(true);
             setScanned(false);
             return;
           }
         }
+
         Linking.openURL(scannedData).catch(() => {
           setDialogMessage('Bağlantı açılamadı: Geçerli bir URL sağladığınızdan emin olun.');
           setDialogVisible(true);
@@ -58,6 +55,10 @@ const QRScanner = () => {
       setErrorVisible(true);
     }
   };
+
+  useEffect(() => {
+    requestCameraPermission();
+  }, []);
 
   if (!hasPermission) {
     return (
@@ -80,7 +81,7 @@ const QRScanner = () => {
   }
 
   return (
-    <View style={{width: '100%', height: '100%'}}>
+    <View style={{ width: '100%', height: '100%' }}>
       <Camera
         style={{ width: '100%', height: '100%' }}
         cameraType={CameraType.Back}
@@ -101,7 +102,10 @@ const QRScanner = () => {
         Beklenmeyen bir hata oluştu!
       </Snackbar>
       <Portal>
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+        <Dialog
+          visible={dialogVisible}
+          onDismiss={() => setDialogVisible(false)}
+        >
           <Dialog.Title>Uyarı</Dialog.Title>
           <Dialog.Content>
             <Text>{dialogMessage}</Text>
@@ -124,22 +128,13 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 16,
   },
-  permissionText: {
-    fontSize: 18,
-    color: '#333',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  permissionButton: {
-    width: '60%',
-  },
   snackbar: {
     backgroundColor: '#f44336',
   },
   card: {
     elevation: 4,
     borderRadius: 12,
-    width:'100%'
+    width: '100%',
   },
   button: {
     marginVertical: 16,

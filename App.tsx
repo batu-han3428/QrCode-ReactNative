@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { IconButton, Appbar, Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
+import { IconButton, Appbar, Provider as PaperProvider, DefaultTheme, MD3Theme } from 'react-native-paper';
 import QRScanner from './components/QRCodeScanner';
 import QRCodeGenerator from './components/QRCodeGenerator';
 import QRPhotoReader from './components/QRPhotoReader';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-const theme = {
+type ActiveMode = 'scanner' | 'generator' | 'photo' | '';
+
+const theme: MD3Theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
     primary: '#6200ee',
-    accent: '#03dac6',
+    secondary: '#03dac6',
   },
 };
 
-const App = () => {
-  const [activeMode, setActiveMode] = useState('');
+const App: React.FC = () => {
+  const [activeMode, setActiveMode] = useState<ActiveMode>('');
 
   return (
     <SafeAreaProvider>
@@ -35,7 +37,7 @@ const App = () => {
             />
             <IconButton
               icon="qrcode"
-              iconColor={theme.colors.accent}
+              iconColor={theme.colors.secondary}
               size={40}
               onPress={() => setActiveMode('generator')}
             />

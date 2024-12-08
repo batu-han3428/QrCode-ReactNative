@@ -4,46 +4,53 @@ import { Button, Card, Text, Snackbar, ActivityIndicator } from 'react-native-pa
 import { launchImageLibrary } from 'react-native-image-picker';
 import RNQRGenerator from 'rn-qr-generator';
 
-const QRPhotoReader = () => {
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [qrCodeValue, setQRCodeValue] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
+const QRPhotoReader: React.FC = () => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [qrCodeValue, setQRCodeValue] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
 
-  const selectImage = () => {
+  const selectImage = (): void => {
     launchImageLibrary({ mediaType: 'photo' }, (response) => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        console.log('Kullanıcı seçim yapmadı.');
       } else if (response.errorCode) {
-        console.log('Image Picker Error: ', response.errorMessage);
+        console.error('Görsel seçme hatası:', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
         const imageUri = response.assets[0].uri;
-        setSelectedImage(imageUri);
-        detectQRCode(imageUri);
+        if (imageUri) {
+          setSelectedImage(imageUri);
+          detectQRCode(imageUri);
+        }
       }
     });
   };
 
-  const detectQRCode = (uri) => {
+  const detectQRCode = (uri: string): void => {
     setLoading(true);
+
     RNQRGenerator.detect({ uri })
       .then((response) => {
         const { values } = response;
-        if (values && values.length > 0) {
-          const isValidUrl = /^(http|https):\/\//.test(values[0]);
 
+        if (values && values.length > 0) {
+          let detectedValue = values[0];
+
+          const isValidUrl = /^(http|https):\/\//.test(detectedValue);
           if (!isValidUrl) {
-            if (values[0].toLowerCase().startsWith('www.')) {
-              values[0] = `http://${values[0]}`;
+            if (detectedValue.toLowerCase().startsWith('www.')) {
+              detectedValue = `http://${detectedValue}`;
             } else {
-              setQRCodeValue(`Geçersiz URL: ${values[0]}`);
+              setQRCodeValue(`Geçersiz URL: ${detectedValue}`);
               setSnackbarVisible(true);
               return;
             }
           }
-          setQRCodeValue(values[0]);
-          Linking.openURL(values[0]).catch((err) => {
-            setQRCodeValue('Bağlantı açılamadı: ' + err.message);
+
+          setQRCodeValue(detectedValue);
+
+          Linking.openURL(detectedValue).catch((err) => {
+            setQRCodeValue(`Bağlantı açılamadı: ${err.message}`);
             setSnackbarVisible(true);
           });
         } else {
@@ -51,8 +58,8 @@ const QRPhotoReader = () => {
           setSnackbarVisible(true);
         }
       })
-      .catch((error) => {
-        console.log('Cannot detect QR code in image', error);
+      .catch((error: Error) => {
+        console.error('QR kod algılama hatası:', error);
         setQRCodeValue('QR kod algılama sırasında bir hata oluştu.');
         setSnackbarVisible(true);
       })
@@ -101,7 +108,7 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'center',
     backgroundColor: '#f5f5f5',
-    width:'100%'
+    width: '100%',
   },
   card: {
     elevation: 4,

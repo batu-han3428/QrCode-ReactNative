@@ -2,24 +2,25 @@ import React, { useRef, useState } from 'react';
 import { View, StyleSheet, Platform, PermissionsAndroid } from 'react-native';
 import { TextInput, Button, Card, Paragraph, Snackbar } from 'react-native-paper';
 import QRCode from 'react-native-qrcode-svg';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { CaptureOptions } from 'react-native-view-shot';
 import RNFS from 'react-native-fs';
 
-const QRCodeGenerator = () => {
-  const [link, setLink] = useState('');
-  const [generatedQR, setGeneratedQR] = useState(false);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const viewShotRef = useRef(null);
+const QRCodeGenerator: React.FC = () => {
+  const [link, setLink] = useState<string>('');
+  const [generatedQR, setGeneratedQR] = useState<boolean>(false);
+  const [snackbarVisible, setSnackbarVisible] = useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+  const viewShotRef = useRef<ViewShot | null>(null);
 
-  const requestStoragePermission = async () => {
+  const requestStoragePermission = async (): Promise<boolean> => {
     if (Platform.OS === 'android') {
       try {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
           {
             title: 'Depolama İzni Gerekli',
-            message: 'QR kodunu cihazınıza kaydedebilmek için depolama iznine ihtiyacımız var.',
+            message:
+              'QR kodunu cihazınıza kaydedebilmek için depolama iznine ihtiyacımız var.',
             buttonNeutral: 'Sonra Sor',
             buttonNegative: 'Hayır',
             buttonPositive: 'Evet',
@@ -34,7 +35,7 @@ const QRCodeGenerator = () => {
     return true;
   };
 
-  const saveQRCode = async () => {
+  const saveQRCode = async (): Promise<void> => {
     const hasPermission = await requestStoragePermission();
     if (!hasPermission) {
       setSnackbarMessage('QR kodunu kaydetmek için izin vermelisiniz.');
@@ -43,9 +44,13 @@ const QRCodeGenerator = () => {
     }
 
     try {
-      const uri = await viewShotRef.current.capture();
-      const timestamp = new Date().getTime();
-      const filePath = `${RNFS.DownloadDirectoryPath}/QRCode_${timestamp}.png`;
+      if (!viewShotRef.current) {
+        throw new Error('ViewShot referansı mevcut değil.');
+      }
+
+      const uri: string = await viewShotRef.current.capture!() as string;
+      const timestamp: number = new Date().getTime();
+      const filePath: string = `${RNFS.DownloadDirectoryPath}/QRCode_${timestamp}.png`;
 
       await RNFS.moveFile(uri, filePath);
 
@@ -62,7 +67,7 @@ const QRCodeGenerator = () => {
     }
   };
 
-  const handleInputChange = (text) => {
+  const handleInputChange = (text: string): void => {
     const updatedText = text.replace(/www/gi, 'www');
     setLink(updatedText);
   };
@@ -98,7 +103,10 @@ const QRCodeGenerator = () => {
           </Button>
           {generatedQR && (
             <View style={styles.qrContainer}>
-              <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
+              <ViewShot
+                ref={viewShotRef}
+                options={{ format: 'png', quality: 1.0 } as CaptureOptions}
+              >
                 <QRCode value={link} size={200} />
               </ViewShot>
               <Button
@@ -109,7 +117,7 @@ const QRCodeGenerator = () => {
                 QR Kodunu Kaydet
               </Button>
             </View>
-            )}
+          )}
         </Card.Content>
       </Card>
 
